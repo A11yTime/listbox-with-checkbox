@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start two</title>
+    <style>
+        .listbox-area {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 20px;
+}
+
+.left-area, .right-area {
+  width: 45%;
+}
+
+.listbox-label {
+  font-weight: bold;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ccc;
+}
+
+li {
+  padding: 10px;
+  cursor: pointer;
+}
+
+li:hover {
+  background-color: #f1f1f1;
+}
+
+li[aria-selected="true"] {
+  background-color: #007bff;
+  color: white;
+}
+
+button {
+  padding: 10px;
+  margin-top: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button[aria-disabled="true"] {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+/* Disabled button style */
+button[aria-disabled="true"] {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+/* Default enabled button style */
+button:not([aria-disabled="true"]) {
+  background-color: #007bff;
+  cursor: pointer;
+}
+
+
+.checkmark {
+  margin-right: 10px;
+}
+
+    </style>
+</head>
+<body>
+    <p>Choose upgrades for your transport capsule.</p>
+<div class="listbox-area">
+  <div class="left-area">
+    <span id="available_upgrades_label" class="listbox-label">Available upgrades:</span>
+    <ul id="available_upgrades_list" tabindex="0" role="listbox" aria-labelledby="available_upgrades_label" aria-multiselectable="true">
+      <li id="upgrade1" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Leather seats
+      </li>
+      <li id="upgrade2" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Front seat warmers
+      </li>
+      <li id="upgrade3" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Rear bucket seats
+      </li>
+      <li id="upgrade4" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Rear seat warmers
+      </li>
+      <li id="upgrade5" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Front sun roof
+      </li>
+      <li id="upgrade6" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Rear sun roof
+      </li>
+      <li id="upgrade7" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Cloaking capability
+      </li>
+      <li id="upgrade8" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Food synthesizer
+      </li>
+      <li id="upgrade9" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Advanced waste recycling system
+      </li>
+      <li id="upgrade10" role="option" aria-selected="false">
+        <span class="checkmark" aria-hidden="true"></span>
+        Turbo vertical take-off capability
+      </li>
+    </ul>
+    <button type="button" id="add_button" class="move-right-btn" aria-keyshortcuts="Alt+ArrowRight Enter" aria-disabled="true">
+      <span class="checkmark" aria-hidden="true"></span>
+      Add
+    </button>
+  </div>
+  <div class="right-area">
+    <span id="chosen_upgrades_label" class="listbox-label">Upgrades you have chosen:</span>
+    <ul id="chosen_upgrades_list" tabindex="0" role="listbox" aria-labelledby="chosen_upgrades_label" aria-activedescendant="" aria-multiselectable="true">
+    </ul>
+    <button type="button" id="remove_button" class="move-left-btn" aria-keyshortcuts="Alt+ArrowLeft Delete" aria-disabled="true">
+      <span class="checkmark" aria-hidden="true"></span>
+      Remove
+    </button>
+  </div>
+  <div class="offscreen">Last change: <span aria-live="polite" id="live_region"></span></div>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+  const availableUpgradesList = document.getElementById("available_upgrades_list");
+  const chosenUpgradesList = document.getElementById("chosen_upgrades_list");
+  const addButton = document.getElementById("add_button");
+  const removeButton = document.getElementById("remove_button");
+  const liveRegion = document.getElementById("live_region");
+
+  // Handle selecting and deselecting upgrades in the available list
+  availableUpgradesList.addEventListener("click", function(e) {
+    if (e.target && e.target.tagName === "LI") {
+      const li = e.target;
+      const isSelected = li.getAttribute("aria-selected") === "true";
+
+      if (isSelected) {
+        li.setAttribute("aria-selected", "false");
+      } else {
+        li.setAttribute("aria-selected", "true");
+      }
+
+      updateButtonState();
+    }
+  });
+
+  // Handle adding upgrades to the chosen list
+  addButton.addEventListener("click", function() {
+    const selectedItems = availableUpgradesList.querySelectorAll("li[aria-selected='true']");
+    
+    selectedItems.forEach(function(item) {
+      const newItem = document.createElement("li");
+      newItem.textContent = item.textContent;
+      newItem.setAttribute("aria-selected", "false");
+
+      chosenUpgradesList.appendChild(newItem);
+      item.setAttribute("aria-selected", "false");
+    });
+
+    updateButtonState();
+    liveRegion.textContent = "Upgrades added!";
+  });
+
+  // Handle removing upgrades from the chosen list
+  removeButton.addEventListener("click", function() {
+    const selectedItems = chosenUpgradesList.querySelectorAll("li[aria-selected='true']");
+    
+    selectedItems.forEach(function(item) {
+      chosenUpgradesList.removeChild(item);
+    });
+
+    updateButtonState();
+    liveRegion.textContent = "Upgrades removed!";
+  });
+
+  // Handle selecting and deselecting upgrades in the chosen list
+  chosenUpgradesList.addEventListener("click", function(e) {
+    if (e.target && e.target.tagName === "LI") {
+      const li = e.target;
+      const isSelected = li.getAttribute("aria-selected") === "true";
+
+      if (isSelected) {
+        li.setAttribute("aria-selected", "false");
+      } else {
+        li.setAttribute("aria-selected", "true");
+      }
+
+      updateButtonState();
+    }
+  });
+
+  // Update button states based on selections
+  function updateButtonState() {
+    const anySelected = availableUpgradesList.querySelector("li[aria-selected='true']") !== null;
+    const anyChosenSelected = chosenUpgradesList.querySelector("li[aria-selected='true']") !== null;
+
+    if (anySelected) {
+      addButton.removeAttribute("aria-disabled"); // Enable Add button
+    } else {
+      addButton.setAttribute("aria-disabled", "true"); // Disable Add button
+    }
+
+    if (anyChosenSelected) {
+      removeButton.removeAttribute("aria-disabled"); // Enable Remove button
+    } else {
+      removeButton.setAttribute("aria-disabled", "true"); // Disable Remove button
+    }
+  }
+
+  // Initial button state update
+  updateButtonState();
+});
+
+</script>
+</body>
+</html>
