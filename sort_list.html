@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drag and Drop Checkbox List with Sorted Fruits</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7f6;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    .form-container {
+      display: flex;
+      justify-content: space-between;
+      width: 90%;
+      max-width: 800px;
+      gap: 30px;
+    }
+
+    form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 45%;
+    }
+
+    fieldset {
+      border: 2px solid #007BFF;
+      border-radius: 8px;
+      padding: 10px 20px;
+    }
+
+    legend {
+      font-size: 18px;
+      font-weight: bold;
+      color: #007BFF;
+      padding: 0 10px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .checkbox-list, .sorted-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .checkbox-item, .sorted-item {
+      display: flex;
+      align-items: center;
+      margin: 10px 0;
+      padding: 10px;
+      background-color: #f1f1f1;
+      border-radius: 8px;
+      cursor: move;
+      transition: 0.3s;
+    }
+
+    .checkbox-item:hover, .sorted-item:hover {
+      background-color: #e2e2e2;
+    }
+
+    label {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      color: #333;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    input[type="checkbox"] {
+      margin-right: 10px;
+      transform: scale(1.2);
+    }
+
+    .dragging {
+      opacity: 0.5;
+    }
+
+    .sorted-group {
+      margin-top: 20px;
+    }
+
+    .sorted-item {
+      background-color: #d1f7d1;
+    }
+
+    .sorted-item:hover {
+      background-color: #b1e6b1;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="form-container">
+    <form>
+      <fieldset>
+        <legend>Choose your favorite fruits</legend>
+        <ul class="checkbox-list" id="checkboxList">
+          <li class="checkbox-item" draggable="true">
+            <label>
+              <input type="checkbox" name="fruits" value="apple" onchange="moveToSorted(this)"> Apple
+            </label>
+          </li>
+          <li class="checkbox-item" draggable="true">
+            <label>
+              <input type="checkbox" name="fruits" value="banana" onchange="moveToSorted(this)"> Banana
+            </label>
+          </li>
+          <li class="checkbox-item" draggable="true">
+            <label>
+              <input type="checkbox" name="fruits" value="orange" onchange="moveToSorted(this)"> Orange
+            </label>
+          </li>
+          <li class="checkbox-item" draggable="true">
+            <label>
+              <input type="checkbox" name="fruits" value="mango" onchange="moveToSorted(this)"> Mango
+            </label>
+          </li>
+        </ul>
+      </fieldset>
+    </form>
+    
+    <form>
+      <fieldset class="sorted-group">
+        <legend>Sorted Fruits</legend>
+        <ul class="sorted-list" id="sortedList">
+          <!-- Sorted items will appear here -->
+        </ul>
+      </fieldset>
+    </form>
+  </div>
+
+  <script>
+    const checkboxList = document.getElementById("checkboxList");
+    const sortedList = document.getElementById("sortedList");
+
+    let draggedItem = null;
+
+    // Add event listeners for drag and drop
+    function addDragEvents(list) {
+      list.addEventListener("dragstart", (e) => {
+        draggedItem = e.target;
+        setTimeout(() => {
+          e.target.classList.add("dragging");
+        }, 0);
+      });
+
+      list.addEventListener("dragend", (e) => {
+        draggedItem.classList.remove("dragging");
+        draggedItem = null;
+      });
+
+      list.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(list, e.clientY);
+        const draggingElement = document.querySelector(".dragging");
+        if (afterElement == null) {
+          list.appendChild(draggingElement);
+        } else {
+          list.insertBefore(draggingElement, afterElement);
+        }
+      });
+
+      list.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+      });
+    }
+
+    function getDragAfterElement(container, y) {
+      const draggableElements = [...container.querySelectorAll(".checkbox-item:not(.dragging), .sorted-item:not(.dragging)")];
+      return draggableElements.reduce(
+        (closest, child) => {
+          const box = child.getBoundingClientRect();
+          const offset = y - box.top - box.height / 2;
+          if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+          } else {
+            return closest;
+          }
+        },
+        { offset: Number.NEGATIVE_INFINITY }
+      ).element;
+    }
+
+    // Move checked items to sorted list
+    function moveToSorted(checkbox) {
+      const listItem = checkbox.closest("li");
+      if (checkbox.checked) {
+        // Move the item to sorted list
+        sortedList.appendChild(listItem);
+      } else {
+        // Move back to original list
+        checkboxList.appendChild(listItem);
+      }
+    }
+
+    // Initialize drag-and-drop functionality on both lists
+    addDragEvents(checkboxList);
+    addDragEvents(sortedList);
+
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final</title>
+    <style>
+        .listbox-area {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            margin: 20px;
+        }
+
+        .left-area, .right-area {
+            width: 45%;
+        }
+
+        .listbox-label {
+            font-weight: bold;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+        }
+
+        li {
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            border: 1px solid transparent;
+            margin: 5px 0;
+            background-color: #f9f9f9;
+        }
+
+        li:hover {
+            background-color: #f1f1f1;
+        }
+
+        li[aria-selected="true"] {
+            background-color: #007bff;
+            color: white;
+        }
+
+        button {
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button[aria-disabled="true"] {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        input[type="checkbox"] {
+            margin-right: 10px;
+        }
+
+        .offscreen {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <p>Choose upgrades for your transport capsule.</p>
+    <div class="listbox-area">
+        <div class="left-area">
+            <label for="filter-input">Filter options</label>
+            <input type="text" id="filter-input" placeholder="Search upgrades..." aria-label="Filter upgrades" onkeyup="filterList('available')">
+
+            <span id="available_upgrades_label" class="listbox-label">Available upgrades:</span>
+            <ul id="available_upgrades_list" tabindex="0" role="listbox" aria-labelledby="available_upgrades_label" aria-multiselectable="true">
+                <!-- List of available upgrades will be here -->
+            </ul>
+            <button type="button" id="add_button" aria-disabled="true">
+                Add
+            </button>
+        </div>
+
+        <div class="right-area">
+            <span id="chosen_upgrades_label" class="listbox-label">Upgrades you have chosen:</span>
+            <ul id="chosen_upgrades_list" tabindex="0" role="listbox" aria-labelledby="chosen_upgrades_label" aria-multiselectable="true">
+                <!-- Chosen upgrades will be added here -->
+            </ul>
+            <button type="button" id="remove_button" aria-disabled="true">
+                Remove
+            </button>
+        </div>
+    </div>
+
+    <div class="offscreen"><span aria-live="polite" id="live_region"></span></div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const availableUpgradesList = document.getElementById("available_upgrades_list");
+  const chosenUpgradesList = document.getElementById("chosen_upgrades_list");
+  const addButton = document.getElementById("add_button");
+  const removeButton = document.getElementById("remove_button");
+  const filterInput = document.getElementById("filter-input");
+  const liveRegion = document.getElementById("live_region");
+
+  // Initial list of available upgrades (simulating available upgrades)
+  const upgrades = [
+    "Leather seats",
+    "Front seat warmers",
+    "Rear bucket seats",
+    "Rear seat warmers",
+    "Front sun roof",
+    "Rear sun roof",
+    "Cloaking capability",
+    "Food synthesizer",
+    "Advanced waste recycling system",
+    "Turbo vertical take-off capability"
+  ];
+
+  // Populate the available upgrades list
+  upgrades.forEach((upgrade, index) => {
+    const li = document.createElement("li");
+    li.id = `upgrade${index + 1}`;
+    li.setAttribute("role", "option");
+    li.setAttribute("aria-selected", "false");
+    li.setAttribute("draggable", "true");
+
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.classList.add("upgrade-checkbox");
+
+    label.appendChild(checkbox);
+    label.appendChild(document.createTextNode(upgrade));
+    li.appendChild(label);
+    availableUpgradesList.appendChild(li);
+  });
+
+  // Handle the Add button
+  addButton.addEventListener("click", function() {
+    const selectedItems = availableUpgradesList.querySelectorAll("li[aria-selected='true']");
+    selectedItems.forEach(function(item) {
+      const newItem = document.createElement("li");
+      newItem.textContent = item.textContent;
+      newItem.setAttribute("aria-selected", "false");
+      newItem.setAttribute("draggable", "true");
+
+      const newCheckbox = document.createElement("input");
+      newCheckbox.type = "checkbox";
+      newCheckbox.classList.add("chosen-checkbox");
+      newItem.insertBefore(newCheckbox, newItem.firstChild);
+
+      // Add the item to the "Chosen upgrades" list
+      chosenUpgradesList.appendChild(newItem);
+      
+      // Remove the item from the "Available upgrades" list
+      availableUpgradesList.removeChild(item);
+    });
+
+    updateButtonState();
+    liveRegion.textContent = "Upgrades added!";
+    setTimeout(() => {
+      liveRegion.textContent = "";
+    }, 2000);
+  });
+
+  // Handle the Remove button
+  removeButton.addEventListener("click", function() {
+    const selectedItems = chosenUpgradesList.querySelectorAll("li[aria-selected='true']");
+    selectedItems.forEach(function(item) {
+      const newItem = document.createElement("li");
+      newItem.textContent = item.textContent;
+      newItem.setAttribute("aria-selected", "false");
+      newItem.setAttribute("draggable", "true");
+
+      const newCheckbox = document.createElement("input");
+      newCheckbox.type = "checkbox";
+      newCheckbox.classList.add("upgrade-checkbox");
+      newItem.insertBefore(newCheckbox, newItem.firstChild);
+
+      // Add the item back to the "Available upgrades" list
+      availableUpgradesList.appendChild(newItem);
+
+      // Remove the item from the "Chosen upgrades" list
+      chosenUpgradesList.removeChild(item);
+    });
+
+    updateButtonState();
+    liveRegion.textContent = "Upgrades removed!";
+    setTimeout(() => {
+      liveRegion.textContent = "";
+    }, 2000);
+  });
+
+  // Handle selecting and deselecting upgrades in the chosen list
+  chosenUpgradesList.addEventListener("change", function(e) {
+    if (e.target && e.target.classList.contains("chosen-checkbox")) {
+      const li = e.target.closest("li");
+      const isSelected = e.target.checked;
+
+      if (isSelected) {
+        li.setAttribute("aria-selected", "true");
+      } else {
+        li.setAttribute("aria-selected", "false");
+      }
+
+      updateButtonState();
+    }
+  });
+
+  // Handle selecting and deselecting upgrades in the available list
+  availableUpgradesList.addEventListener("change", function(e) {
+    if (e.target && e.target.classList.contains("upgrade-checkbox")) {
+      const li = e.target.closest("li");
+      const isSelected = e.target.checked;
+
+      if (isSelected) {
+        li.setAttribute("aria-selected", "true");
+      } else {
+        li.setAttribute("aria-selected", "false");
+      }
+
+      updateButtonState();
+    }
+  });
+
+  // Handle drag and drop in the "Available upgrades" list
+  let draggedItem = null;
+
+  availableUpgradesList.addEventListener("dragstart", function(e) {
+    if (e.target.tagName === "LI") {
+      draggedItem = e.target;
+      draggedItem.classList.add("dragging");
+    }
+  });
+
+  availableUpgradesList.addEventListener("dragend", function() {
+    draggedItem.classList.remove("dragging");
+    draggedItem = null;
+  });
+
+  availableUpgradesList.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    const closestItem = getClosestItem(e.clientY, availableUpgradesList);
+    if (closestItem && closestItem !== draggedItem) {
+      const rect = closestItem.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem);
+      } else {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem.nextSibling);
+      }
+    }
+  });
+
+  // Handle drag and drop in the "Chosen upgrades" list
+  chosenUpgradesList.addEventListener("dragstart", function(e) {
+    if (e.target.tagName === "LI") {
+      draggedItem = e.target;
+      draggedItem.classList.add("dragging");
+    }
+  });
+
+  chosenUpgradesList.addEventListener("dragend", function() {
+    draggedItem.classList.remove("dragging");
+    draggedItem = null;
+  });
+
+  chosenUpgradesList.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    const closestItem = getClosestItem(e.clientY, chosenUpgradesList);
+    if (closestItem && closestItem !== draggedItem) {
+      const rect = closestItem.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem);
+      } else {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem.nextSibling);
+      }
+    }
+  });
+
+  // Function to get the closest item for drag placement
+  function getClosestItem(y, list) {
+    const items = Array.from(list.querySelectorAll("li"));
+    return items.reduce((closest, current) => {
+      const box = current.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { item: current, offset: offset };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY }).item;
+  }
+
+  // Update button states based on selections
+  function updateButtonState() {
+    const anySelected = availableUpgradesList.querySelector("li[aria-selected='true']") !== null;
+    const anyChosenSelected = chosenUpgradesList.querySelector("li[aria-selected='true']") !== null;
+
+    if (anySelected) {
+      addButton.removeAttribute("aria-disabled"); // Enable Add button
+    } else {
+      addButton.setAttribute("aria-disabled", "true"); // Disable Add button
+    }
+
+    if (anyChosenSelected) {
+      removeButton.removeAttribute("aria-disabled"); // Enable Remove button
+    } else {
+      removeButton.setAttribute("aria-disabled", "true"); // Disable Remove button
+    }
+  }
+
+  // Filter function for both lists
+  function filterList(listType) {
+    const filterValue = filterInput.value.toLowerCase();
+    const list = listType === 'available' ? availableUpgradesList : chosenUpgradesList;
+    const items = list.querySelectorAll('li');
+
+    items.forEach(item => {
+      const label = item.querySelector('label').textContent.toLowerCase();
+      if (label.indexOf(filterValue) > -1) {
+        item.style.display = "";
+      } else {
+        item.style.display = "none";
+      }
+    });
+  }
+
+  // Initial button state update
+  updateButtonState();
+});
+</script>
+</body>
+</html>
