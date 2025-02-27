@@ -136,7 +136,7 @@
     <div class="offscreen"><span aria-live="polite" id="live_region"></span></div>
 
 <script>
- document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function() {
     const availableUpgradesList = document.getElementById("available_upgrades_list");
     const chosenUpgradesList = document.getElementById("chosen_upgrades_list");
     const addButton = document.getElementById("add_button");
@@ -146,347 +146,171 @@
     const filterInput = document.getElementById("filter-input");
     const liveRegion = document.getElementById("live_region");
 
-  
-  moveUpButton.addEventListener("click", moveItemUp);
-  moveDownButton.addEventListener("click", moveItemDown);
-
-  // Initial list of available upgrades (simulating available upgrades)
-  const upgrades = [
-    "Cost basis",
-    "Paper trade (basis ans avg)",
-    "Day G/L $",
-    "Day G/L $",
-    "Day G/L ($ and %)",
-    "Total G/L $",
-    "Total G/L %",
-    "Total G/L ($ and %)",
-    "Last",
-    "Last Trade Date",
-    "Change $",
-    "Change %",
-    "Change ($ and %)",
-    "Last $ and %",
-    "Valume",
-    "Day range",
-    "Bid",
-    "Ask"
-  ];
-
-  // Populate the available upgrades list
-  upgrades.forEach((upgrade, index) => {
-    const li = document.createElement("li");
-    li.id = `upgrade${index + 1}`;
-    li.setAttribute("role", "option");
-    li.setAttribute("aria-selected", "false");
-    li.setAttribute("draggable", "true");
-    li.setAttribute("tabindex", index === 0 ? "0" : "-1"); // Roving tabindex
-    li.textContent = upgrade;
-    availableUpgradesList.appendChild(li);
-  });
-
-      // Event listeners for buttons
-    //   addButton.addEventListener("click", addItem);
-    // removeButton.addEventListener("click", removeItem);
     moveUpButton.addEventListener("click", moveItemUp);
     moveDownButton.addEventListener("click", moveItemDown);
+
+    // Initial list of available upgrades
+    const upgrades = [
+        "Cost basis", "Paper trade (basis ans avg)", "Day G/L $", "Day G/L $",
+        "Day G/L ($ and %)", "Total G/L $", "Total G/L %", "Total G/L ($ and %)",
+        "Last", "Last Trade Date", "Change $", "Change %", "Change ($ and %)",
+        "Last $ and %", "Valume", "Day range", "Bid", "Ask"
+    ];
+
+    // Populate the available upgrades list
+    upgrades.forEach((upgrade, index) => {
+        const li = document.createElement("li");
+        li.id = `upgrade${index + 1}`;
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", "false");
+        li.setAttribute("draggable", "true");
+        li.setAttribute("tabindex", index === 0 ? "0" : "-1"); // Roving tabindex
+        li.textContent = upgrade;
+        availableUpgradesList.appendChild(li);
+    });
 
     // Enable/disable buttons based on selection
     chosenUpgradesList.addEventListener("click", function(event) {
         const selectedItem = event.target.closest("li");
         if (selectedItem) {
-            moveUpButton.ariaDisabled = false;
-            moveDownButton.ariaDisabled = false;
-            removeButton.ariaDisabled = false;
+            // Deselect if already selected
+            const isSelected = selectedItem.getAttribute("aria-selected") === "true";
+            selectedItem.setAttribute("aria-selected", !isSelected ? "true" : "false");
+            updateButtonState();
         }
     });
 
-  // Handle the Add button
-  addButton.addEventListener("click", function() {
-    const selectedItems = availableUpgradesList.querySelectorAll("li[aria-selected='true']");
-    selectedItems.forEach(function(item) {
-      const newItem = document.createElement("li");
-      newItem.id = item.id;
-      newItem.setAttribute("role", "option");
-      newItem.textContent = item.textContent;
-      newItem.setAttribute("aria-selected", "false");
-      newItem.setAttribute("draggable", "true");
-      newItem.setAttribute("tabindex", "-1");
-
-      // Add the item to the "Chosen upgrades" list
-      chosenUpgradesList.appendChild(newItem);
-      
-      // Remove the item from the "Available upgrades" list
-      availableUpgradesList.removeChild(item);
+    availableUpgradesList.addEventListener("click", function(event) {
+        const selectedItem = event.target.closest("li");
+        if (selectedItem) {
+            const isSelected = selectedItem.getAttribute("aria-selected") === "true";
+            selectedItem.setAttribute("aria-selected", !isSelected ? "true" : "false");
+            updateButtonState();
+        }
     });
 
-    updateTabindex(availableUpgradesList);
-    updateTabindex(chosenUpgradesList);
-    updateButtonState();
-    liveRegion.textContent = "columns added to my view!";
-    setTimeout(() => {
-      liveRegion.textContent = "";
-    }, 2000);
-  });
+    // Handle the Add button
+    addButton.addEventListener("click", function() {
+        const selectedItems = availableUpgradesList.querySelectorAll("li[aria-selected='true']");
+        selectedItems.forEach(function(item) {
+            const newItem = document.createElement("li");
+            newItem.id = item.id;
+            newItem.setAttribute("role", "option");
+            newItem.textContent = item.textContent;
+            newItem.setAttribute("aria-selected", "false");
+            newItem.setAttribute("draggable", "true");
+            newItem.setAttribute("tabindex", "-1");
 
-  // Handle the Remove button
-  removeButton.addEventListener("click", function() {
-    const selectedItems = chosenUpgradesList.querySelectorAll("li[aria-selected='true']");
-    selectedItems.forEach(function(item) {
-      const newItem = document.createElement("li");
-      newItem.id = item.id;
-      newItem.setAttribute("role", "option");
-      newItem.textContent = item.textContent;
-      newItem.setAttribute("aria-selected", "false");
-      newItem.setAttribute("draggable", "true");
-      newItem.setAttribute("tabindex", "-1");
+            // Add the item to the "Chosen upgrades" list
+            chosenUpgradesList.appendChild(newItem);
+            
+            // Remove the item from the "Available upgrades" list
+            availableUpgradesList.removeChild(item);
+        });
 
-      // Add the item back to the "Available upgrades" list
-      availableUpgradesList.appendChild(newItem);
-
-      // Remove the item from the "Chosen upgrades" list
-      chosenUpgradesList.removeChild(item);
-    });
-
-    updateTabindex(availableUpgradesList);
-    updateTabindex(chosenUpgradesList);
-    updateButtonState();
-    liveRegion.textContent = "Upgrades removed!";
-    setTimeout(() => {
-      liveRegion.textContent = "";
-    }, 2000);
-  });
-
-  // Handle selecting and deselecting upgrades in the chosen list
-  chosenUpgradesList.addEventListener("click", function(e) {
-    if (e.target && e.target.tagName === "LI") {
-      const li = e.target;
-      const isSelected = li.getAttribute("aria-selected") === "true";
-
-      if (isSelected) {
-        li.setAttribute("aria-selected", "false");
-      } else {
-        li.setAttribute("aria-selected", "true");
-      }
-
-      updateButtonState();
-    }
-  });
-
-  // Handle selecting and deselecting upgrades in the available list
-  availableUpgradesList.addEventListener("click", function(e) {
-    if (e.target && e.target.tagName === "LI") {
-      const li = e.target;
-      const isSelected = li.getAttribute("aria-selected") === "true";
-
-      if (isSelected) {
-        li.setAttribute("aria-selected", "false");
-      } else {
-        li.setAttribute("aria-selected", "true");
-      }
-
-      updateButtonState();
-    }
-  });
-
-  // Handle drag and drop in the "Available upgrades" list
-  let draggedItem = null;
-
-  availableUpgradesList.addEventListener("dragstart", function(e) {
-    if (e.target.tagName === "LI") {
-      draggedItem = e.target;
-      draggedItem.classList.add("dragging");
-    }
-  });
-
-  availableUpgradesList.addEventListener("dragend", function() {
-    draggedItem.classList.remove("dragging");
-    draggedItem = null;
-  });
-
-  availableUpgradesList.addEventListener("dragover", function(e) {
-    e.preventDefault();
-    const closestItem = getClosestItem(e.clientY, availableUpgradesList);
-    if (closestItem && closestItem !== draggedItem) {
-      const rect = closestItem.getBoundingClientRect();
-      if (e.clientY < rect.top + rect.height / 2) {
-        closestItem.parentNode.insertBefore(draggedItem, closestItem);
-      } else {
-        closestItem.parentNode.insertBefore(draggedItem, closestItem.nextSibling);
-      }
-    }
-  });
-
-  // Handle drag and drop in the "Chosen upgrades" list
-  chosenUpgradesList.addEventListener("dragstart", function(e) {
-    if (e.target.tagName === "LI") {
-      draggedItem = e.target;
-      draggedItem.classList.add("dragging");
-    }
-  });
-
-  chosenUpgradesList.addEventListener("dragend", function() {
-    draggedItem.classList.remove("dragging");
-    draggedItem = null;
-  });
-
-  chosenUpgradesList.addEventListener("dragover", function(e) {
-    e.preventDefault();
-    const closestItem = getClosestItem(e.clientY, chosenUpgradesList);
-    if (closestItem && closestItem !== draggedItem) {
-      const rect = closestItem.getBoundingClientRect();
-      if (e.clientY < rect.top + rect.height / 2) {
-        closestItem.parentNode.insertBefore(draggedItem, closestItem);
-      } else {
-        closestItem.parentNode.insertBefore(draggedItem, closestItem.nextSibling);
-      }
-    }
-  });
-
-  // Function to get the closest item for drag placement
-  function getClosestItem(y, list) {
-    const items = Array.from(list.querySelectorAll("li"));
-    return items.reduce((closest, current) => {
-      const box = current.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) {
-        return { item: current, offset: offset };
-      } else {
-        return closest;
-      }
-    }, { offset: Number.NEGATIVE_INFINITY }).item;
-  }
-
-  // Update button states based on selections
-  function updateButtonState() {
-    const anySelected = availableUpgradesList.querySelector("li[aria-selected='true']") !== null;
-    const anyChosenSelected = chosenUpgradesList.querySelector("li[aria-selected='true']") !== null;
-
-    if (anySelected) {
-      addButton.removeAttribute("aria-disabled"); // Enable Add button
-      //addButton.removeAttribute("aria-describedby")
-    } else {
-      addButton.setAttribute("aria-disabled", "true"); // Disable Add button
-      // addButton.setAttribute("aria-describedby", "button-states");
-    }
-
-    if (anyChosenSelected) {
-      removeButton.removeAttribute("aria-disabled"); // Enable Remove button
-    } else {
-      removeButton.setAttribute("aria-disabled", "true"); // Disable Remove button
-    }
-  }
-
-  // Filter function for both lists
-  filterInput.addEventListener("input", function() {
-    const filterValue = filterInput.value.toLowerCase();
-    const listItems = availableUpgradesList.querySelectorAll("li");
-
-    listItems.forEach(function(item){
-        const textContent = item.textContent.toLocaleLowerCase();
-        if(textContent.includes(filterValue)) {
-            item.style.display = "";
-        }else{
-                item.style.display = "none"
-            }
-       })
-   })
-
-  // Initial button state update
-  updateButtonState();
-
-  // Add keyboard navigation for moving items up/down and selecting with spacebar
-  document.addEventListener('keydown', (e) => {
-    if (e.altKey && e.key === 'ArrowDown') {
-      moveItemDown();
-    } else if (e.altKey && e.key === 'ArrowUp') {
-      moveItemUp();
-    } else if (e.key === 'ArrowDown') {
-      navigateList('down');
-    } else if (e.key === 'ArrowUp') {
-      navigateList('up');
-    } else if (e.key === ' ') {
-      toggleSelection();
-    }
-  });
-
-// Move the selected item down
-function moveItemDown() {
-    const list = document.activeElement.closest("ul");
-    const currentItem = document.activeElement.closest("li");
-    if (!currentItem || !list) return;
-    const nextItem = currentItem.nextElementSibling;
-    if (nextItem) {
-        list.insertBefore(nextItem, currentItem);
-        currentItem.focus(); // Ensure the focus remains on the moved item
-        liveRegion.textContent = "Item moved down";
+        updateTabindex(availableUpgradesList);
+        updateTabindex(chosenUpgradesList);
+        updateButtonState();
+        liveRegion.textContent = "Columns added to my view!";
         setTimeout(() => {
             liveRegion.textContent = "";
-        }, 1000);
-    }
-    updateTabindex(list);
-}
+        }, 2000);
+    });
 
- // Move the selected item up
-function moveItemUp() {
-    const list = document.activeElement.closest("ul");
-    const currentItem = document.activeElement.closest("li");
-    if (!currentItem || !list) return;
+    // Handle the Remove button
+    removeButton.addEventListener("click", function() {
+        const selectedItems = chosenUpgradesList.querySelectorAll("li[aria-selected='true']");
+        selectedItems.forEach(function(item) {
+            const newItem = document.createElement("li");
+            newItem.id = item.id;
+            newItem.setAttribute("role", "option");
+            newItem.textContent = item.textContent;
+            newItem.setAttribute("aria-selected", "false");
+            newItem.setAttribute("draggable", "true");
+            newItem.setAttribute("tabindex", "-1");
 
-    const previousItem = currentItem.previousElementSibling;
-    if (previousItem) {
-        list.insertBefore(currentItem, previousItem);
-        currentItem.focus(); // Ensure the focus remains on the moved item
-        liveRegion.textContent = "Item moved up";
+            // Add the item back to the "Available upgrades" list
+            availableUpgradesList.appendChild(newItem);
+
+            // Remove the item from the "Chosen upgrades" list
+            chosenUpgradesList.removeChild(item);
+        });
+
+        updateTabindex(availableUpgradesList);
+        updateTabindex(chosenUpgradesList);
+        updateButtonState();
+        liveRegion.textContent = "Upgrades removed!";
         setTimeout(() => {
             liveRegion.textContent = "";
-        }, 1000);
-    }
-    updateTabindex(list);
-}
-
-  // Navigate the list with arrow keys
-  function navigateList(direction) {
-    const list = document.activeElement.closest("ul");
-    const currentItem = document.activeElement.closest("li");
-    if (!currentItem || !list) return;
-
-    let nextItem;
-    if (direction === 'down') {
-      nextItem = currentItem.nextElementSibling;
-    } else if (direction === 'up') {
-      nextItem = currentItem.previousElementSibling;
-    }
-
-    if (nextItem) {
-      currentItem.setAttribute("tabindex", "-1");
-      nextItem.setAttribute("tabindex", "0");
-      nextItem.focus();
-    }
-  }
-
-  // Toggle selection with spacebar
-  function toggleSelection() {
-    const currentItem = document.activeElement.closest("li");
-    if (!currentItem) return;
-
-    const isSelected = currentItem.getAttribute("aria-selected") === "true";
-    if (isSelected) {
-      currentItem.setAttribute("aria-selected", "false");
-    } else {
-      currentItem.setAttribute("aria-selected", "true");
-    }
-
-    updateButtonState();
-  }
-
-  // Update tabindex for the available and chosen upgrades lists
-  function updateTabindex(list) {
-    const items = list.querySelectorAll("li");
-    items.forEach((item, index) => {
-      item.setAttribute("tabindex", index === 0 ? "0" : "-1");
+        }, 2000);
     });
-  }
+
+    // Update button states based on selections
+    function updateButtonState() {
+        const anySelected = availableUpgradesList.querySelector("li[aria-selected='true']") !== null;
+        const anyChosenSelected = chosenUpgradesList.querySelector("li[aria-selected='true']") !== null;
+
+        if (anySelected) {
+            addButton.removeAttribute("aria-disabled"); // Enable Add button
+        } else {
+            addButton.setAttribute("aria-disabled", "true"); // Disable Add button
+        }
+
+        if (anyChosenSelected) {
+            removeButton.removeAttribute("aria-disabled"); // Enable Remove button
+            moveUpButton.removeAttribute("aria-disabled"); // Enable Move Up button
+            moveDownButton.removeAttribute("aria-disabled"); // Enable Move Down button
+        } else {
+            removeButton.setAttribute("aria-disabled", "true"); // Disable Remove button
+            moveUpButton.setAttribute("aria-disabled", "true"); // Disable Move Up button
+            moveDownButton.setAttribute("aria-disabled", "true"); // Disable Move Down button
+        }
+    }
+
+    // Move the selected item down
+    function moveItemDown() {
+        const selectedItem = chosenUpgradesList.querySelector("li[aria-selected='true']");
+        if (!selectedItem) return;
+        
+        const nextItem = selectedItem.nextElementSibling;
+        if (nextItem) {
+            chosenUpgradesList.insertBefore(nextItem, selectedItem);
+            selectedItem.focus();
+            liveRegion.textContent = "Item moved down";
+            setTimeout(() => {
+                liveRegion.textContent = "";
+            }, 1000);
+        }
+    }
+
+    // Move the selected item up
+    function moveItemUp() {
+        const selectedItem = chosenUpgradesList.querySelector("li[aria-selected='true']");
+        if (!selectedItem) return;
+        
+        const previousItem = selectedItem.previousElementSibling;
+        if (previousItem) {
+            chosenUpgradesList.insertBefore(selectedItem, previousItem);
+            selectedItem.focus();
+            liveRegion.textContent = "Item moved up";
+            setTimeout(() => {
+                liveRegion.textContent = "";
+            }, 1000);
+        }
+    }
+
+    // Update tabindex for the available and chosen upgrades lists
+    function updateTabindex(list) {
+        const items = list.querySelectorAll("li");
+        items.forEach((item, index) => {
+            item.setAttribute("tabindex", index === 0 ? "0" : "-1");
+        });
+    }
+
+    // Initial button state update
+    updateButtonState();
 });
+
 
 </script>
 </body>
