@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Watchlist</title>
+    <style>
+        .listbox-area {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+            margin: 20px;
+        }
+
+        .left-area, .right-area {
+            width: 45%;
+        }
+
+        .listbox-label {
+            font-weight: bold;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 10px 0;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+        }
+
+        li {
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            border: 1px solid transparent;
+            margin: 5px 0;
+            background-color: #f9f9f9;
+        }
+
+        li:hover {
+            background-color: #f1f1f1;
+        }
+
+        li[aria-selected="true"] {
+            
+            position: relative;
+            padding-left: 25px; 
+        }
+        li[aria-selected="true"]::before {
+        content: "✔"; 
+        color: #007bff;
+        position: absolute;
+        left: 0;
+        top: 0; 
+        border: 1px solid #007bff;
+        padding: 2px; 
+       }
+
+        /* li[aria-selected="true"]::before {
+            content: "✔"; 
+            color: #007bff;
+            position: absolute;
+            left: 0;
+            border: 1px solid #007bff;
+            padding: 2px; 
+        } */
+        button {
+            padding: 10px;
+            margin-top: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button[aria-disabled="true"] {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .offscreen {
+            position: absolute;
+            left: -9999px;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: none;
+        }
+        .page-title {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-title">
+        <h1>Create my view</h1>
+        <p>Choose the columns you would like to see across your watchlist(s)</p>
+    </div>
+    
+    <div class="listbox-area">
+        <div class="left-area">
+            <label for="filter-input">Filter options</label>
+            <input type="text" id="filter-input" placeholder="Search columns..." aria-label="Filter columns" onkeyup="filterList('available')">
+
+            <span id="available_upgrades_label" class="listbox-label">All columns:</span>
+            <ul id="available_upgrades_list"  role="listbox" aria-labelledby="available_upgrades_label" aria-multiselectable="true">
+                <!-- List of available upgrades will be here -->
+            </ul>
+            <button type="button" id="add_button" aria-disabled="true">
+                Add
+            </button>
+        </div>
+
+        <div class="right-area">
+            <span id="chosen_upgrades_label" class="listbox-label">My view:</span>
+            <ul id="chosen_upgrades_list" role="listbox" aria-labelledby="chosen_upgrades_label" aria-multiselectable="true">
+                <!-- Chosen upgrades will be added here -->
+            </ul>
+            <button type="button" id="remove_button" aria-disabled="true">
+                Remove
+            </button>
+            <button type="button" id="move_up_button" aria-disabled="true">
+                Move Up
+            </button>
+            <button type="button" id="move_down_button" aria-disabled="true">
+                Move Down
+            </button>
+        </div>
+    </div>
+
+    <div class="offscreen"><span aria-live="polite" id="live_region"></span></div>
+
+<script>
+ document.addEventListener("DOMContentLoaded", function() {
+    const availableUpgradesList = document.getElementById("available_upgrades_list");
+    const chosenUpgradesList = document.getElementById("chosen_upgrades_list");
+    const addButton = document.getElementById("add_button");
+    const removeButton = document.getElementById("remove_button");
+    const moveUpButton = document.getElementById("move_up_button");
+    const moveDownButton = document.getElementById("move_down_button");
+    const filterInput = document.getElementById("filter-input");
+    const liveRegion = document.getElementById("live_region");
+
+  
+  moveUpButton.addEventListener("click", moveItemUp);
+  moveDownButton.addEventListener("click", moveItemDown);
+
+  // Initial list of available upgrades (simulating available upgrades)
+  const upgrades = [
+    "Cost basis",
+    "Paper trade (basis ans avg)",
+    "Day G/L $",
+    "Day G/L $",
+    "Day G/L ($ and %)",
+    "Total G/L $",
+    "Total G/L %",
+    "Total G/L ($ and %)",
+    "Last",
+    "Last Trade Date",
+    "Change $",
+    "Change %",
+    "Change ($ and %)",
+    "Last $ and %",
+    "Valume",
+    "Day range",
+    "Bid",
+    "Ask"
+  ];
+
+  // Populate the available upgrades list
+  upgrades.forEach((upgrade, index) => {
+    const li = document.createElement("li");
+    li.id = `upgrade${index + 1}`;
+    li.setAttribute("role", "option");
+    li.setAttribute("aria-selected", "false");
+    li.setAttribute("draggable", "true");
+    li.setAttribute("tabindex", index === 0 ? "0" : "-1"); // Roving tabindex
+    li.textContent = upgrade;
+    availableUpgradesList.appendChild(li);
+  });
+
+      // Event listeners for buttons
+    //   addButton.addEventListener("click", addItem);
+    // removeButton.addEventListener("click", removeItem);
+    moveUpButton.addEventListener("click", moveItemUp);
+    moveDownButton.addEventListener("click", moveItemDown);
+
+    // Enable/disable buttons based on selection
+    chosenUpgradesList.addEventListener("click", function(event) {
+        const selectedItem = event.target.closest("li");
+        if (selectedItem) {
+            moveUpButton.ariaDisabled = false;
+            moveDownButton.ariaDisabled = false;
+            removeButton.ariaDisabled = false;
+        }
+    });
+
+  // Handle the Add button
+  addButton.addEventListener("click", function() {
+    const selectedItems = availableUpgradesList.querySelectorAll("li[aria-selected='true']");
+    selectedItems.forEach(function(item) {
+      const newItem = document.createElement("li");
+      newItem.id = item.id;
+      newItem.setAttribute("role", "option");
+      newItem.textContent = item.textContent;
+      newItem.setAttribute("aria-selected", "false");
+      newItem.setAttribute("draggable", "true");
+      newItem.setAttribute("tabindex", "-1");
+
+      // Add the item to the "Chosen upgrades" list
+      chosenUpgradesList.appendChild(newItem);
+      
+      // Remove the item from the "Available upgrades" list
+      availableUpgradesList.removeChild(item);
+    });
+
+    updateTabindex(availableUpgradesList);
+    updateTabindex(chosenUpgradesList);
+    updateButtonState();
+    liveRegion.textContent = "columns added to my view!";
+    setTimeout(() => {
+      liveRegion.textContent = "";
+    }, 2000);
+  });
+
+  // Handle the Remove button
+  removeButton.addEventListener("click", function() {
+    const selectedItems = chosenUpgradesList.querySelectorAll("li[aria-selected='true']");
+    selectedItems.forEach(function(item) {
+      const newItem = document.createElement("li");
+      newItem.id = item.id;
+      newItem.setAttribute("role", "option");
+      newItem.textContent = item.textContent;
+      newItem.setAttribute("aria-selected", "false");
+      newItem.setAttribute("draggable", "true");
+      newItem.setAttribute("tabindex", "-1");
+
+      // Add the item back to the "Available upgrades" list
+      availableUpgradesList.appendChild(newItem);
+
+      // Remove the item from the "Chosen upgrades" list
+      chosenUpgradesList.removeChild(item);
+    });
+
+    updateTabindex(availableUpgradesList);
+    updateTabindex(chosenUpgradesList);
+    updateButtonState();
+    liveRegion.textContent = "Upgrades removed!";
+    setTimeout(() => {
+      liveRegion.textContent = "";
+    }, 2000);
+  });
+
+  // Handle selecting and deselecting upgrades in the chosen list
+  chosenUpgradesList.addEventListener("click", function(e) {
+    if (e.target && e.target.tagName === "LI") {
+      const li = e.target;
+      const isSelected = li.getAttribute("aria-selected") === "true";
+
+      if (isSelected) {
+        li.setAttribute("aria-selected", "false");
+      } else {
+        li.setAttribute("aria-selected", "true");
+      }
+
+      updateButtonState();
+    }
+  });
+
+  // Handle selecting and deselecting upgrades in the available list
+  availableUpgradesList.addEventListener("click", function(e) {
+    if (e.target && e.target.tagName === "LI") {
+      const li = e.target;
+      const isSelected = li.getAttribute("aria-selected") === "true";
+
+      if (isSelected) {
+        li.setAttribute("aria-selected", "false");
+      } else {
+        li.setAttribute("aria-selected", "true");
+      }
+
+      updateButtonState();
+    }
+  });
+
+  // Handle drag and drop in the "Available upgrades" list
+  let draggedItem = null;
+
+  availableUpgradesList.addEventListener("dragstart", function(e) {
+    if (e.target.tagName === "LI") {
+      draggedItem = e.target;
+      draggedItem.classList.add("dragging");
+    }
+  });
+
+  availableUpgradesList.addEventListener("dragend", function() {
+    draggedItem.classList.remove("dragging");
+    draggedItem = null;
+  });
+
+  availableUpgradesList.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    const closestItem = getClosestItem(e.clientY, availableUpgradesList);
+    if (closestItem && closestItem !== draggedItem) {
+      const rect = closestItem.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem);
+      } else {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem.nextSibling);
+      }
+    }
+  });
+
+  // Handle drag and drop in the "Chosen upgrades" list
+  chosenUpgradesList.addEventListener("dragstart", function(e) {
+    if (e.target.tagName === "LI") {
+      draggedItem = e.target;
+      draggedItem.classList.add("dragging");
+    }
+  });
+
+  chosenUpgradesList.addEventListener("dragend", function() {
+    draggedItem.classList.remove("dragging");
+    draggedItem = null;
+  });
+
+  chosenUpgradesList.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    const closestItem = getClosestItem(e.clientY, chosenUpgradesList);
+    if (closestItem && closestItem !== draggedItem) {
+      const rect = closestItem.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem);
+      } else {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem.nextSibling);
+      }
+    }
+  });
+
+  // Function to get the closest item for drag placement
+  function getClosestItem(y, list) {
+    const items = Array.from(list.querySelectorAll("li"));
+    return items.reduce((closest, current) => {
+      const box = current.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        return { item: current, offset: offset };
+      } else {
+        return closest;
+      }
+    }, { offset: Number.NEGATIVE_INFINITY }).item;
+  }
+
+  // Update button states based on selections
+  function updateButtonState() {
+    const anySelected = availableUpgradesList.querySelector("li[aria-selected='true']") !== null;
+    const anyChosenSelected = chosenUpgradesList.querySelector("li[aria-selected='true']") !== null;
+
+    if (anySelected) {
+      addButton.removeAttribute("aria-disabled"); // Enable Add button
+      //addButton.removeAttribute("aria-describedby")
+    } else {
+      addButton.setAttribute("aria-disabled", "true"); // Disable Add button
+      // addButton.setAttribute("aria-describedby", "button-states");
+    }
+
+    if (anyChosenSelected) {
+      removeButton.removeAttribute("aria-disabled"); // Enable Remove button
+    } else {
+      removeButton.setAttribute("aria-disabled", "true"); // Disable Remove button
+    }
+  }
+
+  // Filter function for both lists
+  filterInput.addEventListener("input", function() {
+    const filterValue = filterInput.value.toLowerCase();
+    const listItems = availableUpgradesList.querySelectorAll("li");
+
+    listItems.forEach(function(item){
+        const textContent = item.textContent.toLocaleLowerCase();
+        if(textContent.includes(filterValue)) {
+            item.style.display = "";
+        }else{
+                item.style.display = "none"
+            }
+       })
+   })
+
+  // Initial button state update
+  updateButtonState();
+
+  // Add keyboard navigation for moving items up/down and selecting with spacebar
+  document.addEventListener('keydown', (e) => {
+    if (e.altKey && e.key === 'ArrowDown') {
+      moveItemDown();
+    } else if (e.altKey && e.key === 'ArrowUp') {
+      moveItemUp();
+    } else if (e.key === 'ArrowDown') {
+      navigateList('down');
+    } else if (e.key === 'ArrowUp') {
+      navigateList('up');
+    } else if (e.key === ' ') {
+      toggleSelection();
+    }
+  });
+
+// Move the selected item down
+function moveItemDown() {
+    const list = document.activeElement.closest("ul");
+    const currentItem = document.activeElement.closest("li");
+    if (!currentItem || !list) return;
+    const nextItem = currentItem.nextElementSibling;
+    if (nextItem) {
+        list.insertBefore(nextItem, currentItem);
+        currentItem.focus(); // Ensure the focus remains on the moved item
+        liveRegion.textContent = "Item moved down";
+        setTimeout(() => {
+            liveRegion.textContent = "";
+        }, 1000);
+    }
+    updateTabindex(list);
+}
+
+ // Move the selected item up
+function moveItemUp() {
+    const list = document.activeElement.closest("ul");
+    const currentItem = document.activeElement.closest("li");
+    if (!currentItem || !list) return;
+
+    const previousItem = currentItem.previousElementSibling;
+    if (previousItem) {
+        list.insertBefore(currentItem, previousItem);
+        currentItem.focus(); // Ensure the focus remains on the moved item
+        liveRegion.textContent = "Item moved up";
+        setTimeout(() => {
+            liveRegion.textContent = "";
+        }, 1000);
+    }
+    updateTabindex(list);
+}
+
+  // Navigate the list with arrow keys
+  function navigateList(direction) {
+    const list = document.activeElement.closest("ul");
+    const currentItem = document.activeElement.closest("li");
+    if (!currentItem || !list) return;
+
+    let nextItem;
+    if (direction === 'down') {
+      nextItem = currentItem.nextElementSibling;
+    } else if (direction === 'up') {
+      nextItem = currentItem.previousElementSibling;
+    }
+
+    if (nextItem) {
+      currentItem.setAttribute("tabindex", "-1");
+      nextItem.setAttribute("tabindex", "0");
+      nextItem.focus();
+    }
+  }
+
+  // Toggle selection with spacebar
+  function toggleSelection() {
+    const currentItem = document.activeElement.closest("li");
+    if (!currentItem) return;
+
+    const isSelected = currentItem.getAttribute("aria-selected") === "true";
+    if (isSelected) {
+      currentItem.setAttribute("aria-selected", "false");
+    } else {
+      currentItem.setAttribute("aria-selected", "true");
+    }
+
+    updateButtonState();
+  }
+
+  // Update tabindex for the available and chosen upgrades lists
+  function updateTabindex(list) {
+    const items = list.querySelectorAll("li");
+    items.forEach((item, index) => {
+      item.setAttribute("tabindex", index === 0 ? "0" : "-1");
+    });
+  }
+});
+
+</script>
+</body>
+</html>
