@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>listbox without checkbox</title>
+    <title>Watchlist</title>
     <style>
         .listbox-area {
             display: flex;
             justify-content: space-between;
-            gap: 20px;
+            gap: 5px;
             margin: 20px;
         }
 
@@ -44,10 +44,19 @@
         }
 
         li[aria-selected="true"] {
-            background-color: #007bff;
-            color: white;
+            
+            position: relative;
+            padding-left: 18px; 
         }
-
+    
+       .checkmark {
+        color: #090a0a;
+        position: absolute;
+        left: 0;
+        top: 5px;
+        
+        padding: 2px; 
+       } 
         button {
             padding: 10px;
             margin-top: 10px;
@@ -73,17 +82,24 @@
             clip: rect(0, 0, 0, 0);
             border: none;
         }
+        .page-title {
+            text-align: center;
+        }
     </style>
 </head>
 <body>
-    <p>Choose upgrades for your transport capsule.</p>
+    <div class="page-title">
+        <h1>Create my view</h1>
+        <p>Choose the columns you would like to see across your watchlist(s)</p>
+    </div>
+    
     <div class="listbox-area">
         <div class="left-area">
             <label for="filter-input">Filter options</label>
-            <input type="text" id="filter-input" placeholder="Search upgrades..." aria-label="Filter upgrades" onkeyup="filterList('available')">
+            <input type="text" id="filter-input" placeholder="Search columns..." aria-label="Filter columns" onkeyup="filterList('available')">
 
-            <span id="available_upgrades_label" class="listbox-label">Available upgrades:</span>
-            <ul id="available_upgrades_list" tabindex="0" role="listbox" aria-labelledby="available_upgrades_label" aria-multiselectable="true">
+            <span id="available_upgrades_label" class="listbox-label">All columns:</span>
+            <ul id="available_upgrades_list"  role="listbox" aria-labelledby="available_upgrades_label" aria-multiselectable="true">
                 <!-- List of available upgrades will be here -->
             </ul>
             <button type="button" id="add_button" aria-disabled="true">
@@ -92,54 +108,74 @@
         </div>
 
         <div class="right-area">
-            <span id="chosen_upgrades_label" class="listbox-label">Upgrades you have chosen:</span>
-            <ul id="chosen_upgrades_list" tabindex="0" role="listbox" aria-labelledby="chosen_upgrades_label" aria-multiselectable="true">
+            <span id="chosen_upgrades_label" class="listbox-label">My view:</span>
+            <ul id="chosen_upgrades_list" role="listbox" aria-labelledby="chosen_upgrades_label" aria-multiselectable="true">
                 <!-- Chosen upgrades will be added here -->
             </ul>
             <button type="button" id="remove_button" aria-disabled="true">
                 Remove
             </button>
+            <button type="button" id="move_up_button" aria-disabled="true">
+                Move Up
+            </button>
+            <button type="button" id="move_down_button" aria-disabled="true">
+                Move Down
+            </button>
         </div>
     </div>
 
-    <div class="offscreen"><span aria-live="polite" id="live_region"></span></div>
+    <div class="offscreen"><span aria-live="assertive" id="live_region"></span></div>
 
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+ document.addEventListener("DOMContentLoaded", function() {
   const availableUpgradesList = document.getElementById("available_upgrades_list");
   const chosenUpgradesList = document.getElementById("chosen_upgrades_list");
   const addButton = document.getElementById("add_button");
   const removeButton = document.getElementById("remove_button");
+  const moveUpButton = document.getElementById("move_up_button");
+  const moveDownButton = document.getElementById("move_down_button");
   const filterInput = document.getElementById("filter-input");
   const liveRegion = document.getElementById("live_region");
 
+  moveUpButton.addEventListener("click", moveItemUpbtn);
+  moveDownButton.addEventListener("click", moveItemDownbtn);
+
   // Initial list of available upgrades (simulating available upgrades)
   const upgrades = [
-    "Leather seats",
-    "Front seat warmers",
-    "Rear bucket seats",
-    "Rear seat warmers",
-    "Front sun roof",
-    "Rear sun roof",
-    "Cloaking capability",
-    "Food synthesizer",
-    "Advanced waste recycling system",
-    "Turbo vertical take-off capability"
+    "Cost basis",
+    "Paper trade (basis ans avg)",
+    "Day G/L $",
+    "Day G/L $",
+    "Day G/L ($ and %)",
+    "Total G/L $",
+    "Total G/L %",
+    "Total G/L ($ and %)",
+    "Last",
+    "Last Trade Date",
+    "Change $",
+    "Change %",
+    "Change ($ and %)",
+    "Last $ and %",
+    "Valume",
+    "Day range",
+    "Bid",
+    "Ask"
   ];
 
-  // Populate the available upgrades list
+  // Populate the available upgrades list -- did
   upgrades.forEach((upgrade, index) => {
     const li = document.createElement("li");
     li.id = `upgrade${index + 1}`;
     li.setAttribute("role", "option");
     li.setAttribute("aria-selected", "false");
     li.setAttribute("draggable", "true");
-    li.setAttribute("tabindex", index === 0 ? "0" : "-1"); // Roving tabindex
+    li.setAttribute("tabindex", index === 0 ? "0" : "-1"); 
     li.textContent = upgrade;
     availableUpgradesList.appendChild(li);
+ 
   });
 
-  // Handle the Add button
+  // Handle the Add button -- did
   addButton.addEventListener("click", function() {
     const selectedItems = availableUpgradesList.querySelectorAll("li[aria-selected='true']");
     selectedItems.forEach(function(item) {
@@ -161,13 +197,13 @@ document.addEventListener("DOMContentLoaded", function() {
     updateTabindex(availableUpgradesList);
     updateTabindex(chosenUpgradesList);
     updateButtonState();
-    liveRegion.textContent = "Upgrades added!";
+    liveRegion.textContent = "columns added to my view!";
     setTimeout(() => {
       liveRegion.textContent = "";
     }, 2000);
   });
 
-  // Handle the Remove button
+  // Handle the Remove button -- did *
   removeButton.addEventListener("click", function() {
     const selectedItems = chosenUpgradesList.querySelectorAll("li[aria-selected='true']");
     selectedItems.forEach(function(item) {
@@ -195,32 +231,58 @@ document.addEventListener("DOMContentLoaded", function() {
     }, 2000);
   });
 
-  // Handle selecting and deselecting upgrades in the chosen list
+  // Handle selecting and deselecting upgrades in the chosen list -- did *
   chosenUpgradesList.addEventListener("click", function(e) {
-    if (e.target && e.target.tagName === "LI") {
-      const li = e.target;
-      const isSelected = li.getAttribute("aria-selected") === "true";
+  if (e.target && e.target.tagName === "LI") {
+    const li = e.target;
+    const isSelected = li.getAttribute("aria-selected") === "true";
 
-      if (isSelected) {
-        li.setAttribute("aria-selected", "false");
-      } else {
-        li.setAttribute("aria-selected", "true");
-      }
+  
 
-      updateButtonState();
+    // Deselect all items
+    const items = chosenUpgradesList.querySelectorAll("li");
+    items.forEach(item => item.setAttribute("aria-selected", "false"));
+    
+    const checkmark = li.querySelector('span[aria-hidden="true"]');
+     if(checkmark) {
+      checkmark.remove();
+     }
+    if (!isSelected) {
+      li.setAttribute("aria-selected", "true");
+
+      const checkmark = document.createElement("span");
+      checkmark.classList.add("checkmark")
+      checkmark.setAttribute("aria-hidden", "true");
+      checkmark.textContent = "✔"
+      li.appendChild(checkmark)
+    }
+
+    updateButtonState();
     }
   });
 
-  // Handle selecting and deselecting upgrades in the available list
+  // Handle selecting and deselecting upgrades in the available list -- did *
   availableUpgradesList.addEventListener("click", function(e) {
     if (e.target && e.target.tagName === "LI") {
       const li = e.target;
       const isSelected = li.getAttribute("aria-selected") === "true";
 
-      if (isSelected) {
-        li.setAttribute("aria-selected", "false");
-      } else {
+      const items = availableUpgradesList.querySelectorAll("li");
+      items.forEach(item => item.setAttribute("aria-selected", "false"))
+
+     const checkmark = li.querySelector('span[aria-hidden="true"]');
+     if(checkmark) {
+      checkmark.remove();
+    }
+
+      if (!isSelected) {
         li.setAttribute("aria-selected", "true");
+
+      const checkmark = document.createElement("span");
+      checkmark.classList.add("checkmark")
+      checkmark.setAttribute("aria-hidden", "true");
+      checkmark.textContent = "✔"
+      li.appendChild(checkmark)
       }
 
       updateButtonState();
@@ -255,6 +317,32 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   });
 
+  // Handle drag and drop in the "Chosen upgrades" list
+  chosenUpgradesList.addEventListener("dragstart", function(e) {
+    if (e.target.tagName === "LI") {
+      draggedItem = e.target;
+      draggedItem.classList.add("dragging");
+    }
+  });
+
+  chosenUpgradesList.addEventListener("dragend", function() {
+    draggedItem.classList.remove("dragging");
+    draggedItem = null;
+  });
+
+  chosenUpgradesList.addEventListener("dragover", function(e) {
+    e.preventDefault();
+    const closestItem = getClosestItem(e.clientY, chosenUpgradesList);
+    if (closestItem && closestItem !== draggedItem) {
+      const rect = closestItem.getBoundingClientRect();
+      if (e.clientY < rect.top + rect.height / 2) {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem);
+      } else {
+        closestItem.parentNode.insertBefore(draggedItem, closestItem.nextSibling);
+      }
+    }
+  });
+
   // Function to get the closest item for drag placement
   function getClosestItem(y, list) {
     const items = Array.from(list.querySelectorAll("li"));
@@ -276,41 +364,46 @@ document.addEventListener("DOMContentLoaded", function() {
 
     if (anySelected) {
       addButton.removeAttribute("aria-disabled"); // Enable Add button
+      //addButton.removeAttribute("aria-describedby")
     } else {
       addButton.setAttribute("aria-disabled", "true"); // Disable Add button
+      // addButton.setAttribute("aria-describedby", "button-states");
     }
 
     if (anyChosenSelected) {
       removeButton.removeAttribute("aria-disabled"); // Enable Remove button
+      moveUpButton.removeAttribute("aria-disabled"); // Enable Move Up button
+      moveDownButton.removeAttribute("aria-disabled"); // Enable Move Down button
     } else {
       removeButton.setAttribute("aria-disabled", "true"); // Disable Remove button
+      moveUpButton.setAttribute("aria-disabled", "true"); // Disable Move Up button
+      moveDownButton.setAttribute("aria-disabled", "true"); // Disable Move Down button
     }
   }
 
   // Filter function for both lists
-  function filterList(listType) {
+  filterInput.addEventListener("input", function() {
     const filterValue = filterInput.value.toLowerCase();
-    const list = listType === 'available' ? availableUpgradesList : chosenUpgradesList;
-    const items = list.querySelectorAll('li');
+    const listItems = availableUpgradesList.querySelectorAll("li");
 
-    items.forEach(item => {
-      const label = item.textContent.toLowerCase();
-      if (label.indexOf(filterValue) > -1) {
-        item.style.display = "";
-      } else {
-        item.style.display = "none";
-      }
-    });
-  }
+    listItems.forEach(function(item){
+        const textContent = item.textContent.toLocaleLowerCase();
+        if(textContent.includes(filterValue)) {
+            item.style.display = "";
+        }else{      
+                item.style.display = "none"
+            }
+       })
+   })
 
   // Initial button state update
   updateButtonState();
 
   // Add keyboard navigation for moving items up/down and selecting with spacebar
   document.addEventListener('keydown', (e) => {
-    if (e.altKey && e.key === 'ArrowDown') {
+    if (e.ctrlKey && e.key === 'ArrowDown') {
       moveItemDown();
-    } else if (e.altKey && e.key === 'ArrowUp') {
+    } else if (e.ctrlKey && e.key === 'ArrowUp') {
       moveItemUp();
     } else if (e.key === 'ArrowDown') {
       navigateList('down');
@@ -320,18 +413,51 @@ document.addEventListener("DOMContentLoaded", function() {
       toggleSelection();
     }
   });
+ // Move the selected item down
+ function moveItemDownbtn() {
+        const selectedItem = chosenUpgradesList.querySelector("li[aria-selected='true']");
+        if (!selectedItem) return;
+        
+        const nextItem = selectedItem.nextElementSibling;
+        if (nextItem) {
+            chosenUpgradesList.insertBefore(nextItem, selectedItem);
+            selectedItem.focus();
+            liveRegion.textContent = "Item moved down";
+            setTimeout(() => {
+                liveRegion.textContent = "";
+            }, 1000);
+        }
+    }
+
+    // Move the selected item up
+    function moveItemUpbtn() {
+        const selectedItem = chosenUpgradesList.querySelector("li[aria-selected='true']");
+        if (!selectedItem) return;
+        
+        const previousItem = selectedItem.previousElementSibling;
+        if (previousItem) {
+            chosenUpgradesList.insertBefore(selectedItem, previousItem);
+            selectedItem.focus();
+            liveRegion.textContent = "Item moved up";
+            setTimeout(() => {
+                liveRegion.textContent = "";
+            }, 1000);
+        }
+    }
 
   // Move the selected item down
   function moveItemDown() {
     const list = document.activeElement.closest("ul");
     const currentItem = document.activeElement.closest("li");
     if (!currentItem || !list) return;
-
     const nextItem = currentItem.nextElementSibling;
     if (nextItem) {
       list.insertBefore(nextItem, currentItem);
       currentItem.focus(); // Ensure the focus remains on the moved item
-      liveRegion.textContent = "Item moved down"; // Insert message into the alert container
+      liveRegion.textContent = "Item moved down";
+      setTimeout(() => {
+      liveRegion.textContent = "";
+      }, 1000);
     }
     updateTabindex(list);
   }
@@ -346,7 +472,10 @@ document.addEventListener("DOMContentLoaded", function() {
     if (previousItem) {
       list.insertBefore(currentItem, previousItem);
       currentItem.focus(); // Ensure the focus remains on the moved item
-      liveRegion.textContent = "Item moved up"; // Insert message into the alert container
+      liveRegion.textContent = "Item moved up";
+      setTimeout(() => {
+      liveRegion.textContent = "";
+      }, 1000);
     }
     updateTabindex(list);
   }
@@ -372,19 +501,24 @@ document.addEventListener("DOMContentLoaded", function() {
   }
 
   // Toggle selection with spacebar
-  function toggleSelection() {
+
+    function toggleSelection() {
     const currentItem = document.activeElement.closest("li");
     if (!currentItem) return;
 
     const isSelected = currentItem.getAttribute("aria-selected") === "true";
-    if (isSelected) {
-      currentItem.setAttribute("aria-selected", "false");
-    } else {
-      currentItem.setAttribute("aria-selected", "true");
+
+    // Deselect all items if the current item is not already selected
+    if (!isSelected) {
+      const items = currentItem.closest("ul").querySelectorAll("li[aria-selected='true']");
+      items.forEach(item => item.setAttribute("aria-selected", "false"));
     }
 
+    // Toggle the selection state of the current item
+    currentItem.setAttribute("aria-selected", isSelected ? "false" : "true");
+
     updateButtonState();
-  }
+   }
 
   // Update tabindex for the available and chosen upgrades lists
   function updateTabindex(list) {
@@ -394,6 +528,7 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
 });
+
 </script>
 </body>
 </html>
