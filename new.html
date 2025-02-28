@@ -506,34 +506,45 @@
     }
   }
 
-  // Toggle selection with spacebar
+function toggleSelection(event) {
+  // Check if the key pressed is Spacebar
+  if (event.key !== " " && event.key !== "Spacebar") return;
 
-    function toggleSelection() {
-    const currentItem = document.activeElement.closest("li");
-    if (!currentItem) return;
+  const currentItem = document.activeElement.closest("li");
+  if (!currentItem) return;
 
-    const isSelected = currentItem.getAttribute("aria-selected") === "true";
-
-    // Deselect all items if the current item is not already selected
-    if (!isSelected) {
-      const items = currentItem.closest("ul").querySelectorAll("li[aria-selected='true']");
-      items.forEach(item => item.setAttribute("aria-selected", "false"));
+  const isSelected = currentItem.getAttribute("aria-selected") === "true";
+  
+  // Remove checkmark if the item is being deselected
+  if (isSelected) {
+    const checkmark = currentItem.querySelector('span[aria-hidden="true"]');
+    if (checkmark) {
+      checkmark.remove(); // Remove checkmark if deselecting
     }
-
-    // Toggle the selection state of the current item
-    currentItem.setAttribute("aria-selected", isSelected ? "false" : "true");
-
-    updateButtonState();
-   }
-
-  // Update tabindex for the available and chosen upgrades lists
-  function updateTabindex(list) {
-    const items = list.querySelectorAll("li");
-    items.forEach((item, index) => {
-      item.setAttribute("tabindex", index === 0 ? "0" : "-1");
-    });
   }
-});
+  
+  // Toggle the selection state of the current item
+  currentItem.setAttribute("aria-selected", isSelected ? "false" : "true");
+
+  // Add checkmark if the item is selected
+  if (!isSelected) {
+    const checkmark = document.createElement('span');
+    checkmark.setAttribute('aria-hidden', 'true');
+    checkmark.textContent = "✔"; // Add checkmark symbol or icon
+    currentItem.appendChild(checkmark); // Add checkmark if selecting
+  }
+
+  updateButtonState();
+}
+
+// Update tabindex for the available and chosen upgrades lists
+function updateTabindex(list) {
+  const items = list.querySelectorAll("li");
+  items.forEach((item, index) => {
+    item.setAttribute("tabindex", index === 0 ? "0" : "-1");
+  });
+}
+
 
 </script>
 </body>
