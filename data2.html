@@ -186,7 +186,26 @@
       });
     }
 
-    // Move checked items to sorted list without removing them from "Choose your upgrades"
+     // Function to handle key navigation for Home and End keys
+function handleKeyNavigation(event) {
+  if (event.key === "Home") {
+    const firstCheckbox = checkboxList.querySelector("li input[type='checkbox']");
+    if (firstCheckbox) {
+      firstCheckbox.focus();
+    }
+  } else if (event.key === "End") {
+    const checkboxes = checkboxList.querySelectorAll("li input[type='checkbox']");
+    const lastCheckbox = checkboxes[checkboxes.length - 1];
+    if (lastCheckbox) {
+      lastCheckbox.focus();
+    }
+  }
+}
+
+// Add event listener for keydown to handle Home and End keys
+document.addEventListener("keydown", handleKeyNavigation);
+
+    // Function to move checked items to sorted list without removing them from "Choose your upgrades"
     function moveToSorted(checkbox) {
       const listItem = checkbox.closest("li");
 
@@ -209,12 +228,16 @@
       const listItem = checkbox.closest("li");
 
       // Re-enable the checkbox in "Choose your upgrades"
-      const originalItem = checkboxList.querySelector(`li .checkbox-item input[value="${checkbox.value}"]`).closest('li');
+      const originalItem = checkboxList.querySelector(`li input[value="${checkbox.value}"]`).closest('li');
       const originalCheckbox = originalItem.querySelector("input");
+      
+      // Re-enable the checkbox and remove the 'disabled' class
       originalCheckbox.disabled = false;
       originalItem.classList.remove('disabled');
+      // Uncheck the checkbox when moved back to "Choose Your Upgrades"
+  originalCheckbox.checked = false;
 
-      // Remove the item from Sorted Upgrades
+      // Remove the item from Sorted Upgrades list
       listItem.remove();
     }
 
