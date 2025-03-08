@@ -3,27 +3,38 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Drag and Drop Checkbox List with Sorted Fruits</title>
+  <title>Watchlist with Checkbox</title>
   <style>
-    body {
+     body {
       font-family: Arial, sans-serif;
       background-color: #f4f7f6;
       margin: 0;
       padding: 0;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
+      align-items: center;
       flex-direction: column;
       height: 100vh;
     }
 
-    form {
+    .card-container {
       background-color: #fff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-      width: 300px;
-      margin-top: 20px;
+      width: 90%;
+      max-width: 1000px;
+      display: flex;
+      justify-content: space-between;
+      gap: 30px;
+    }
+
+    form {
+      background-color: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      width: 45%;
     }
 
     fieldset {
@@ -76,6 +87,15 @@
       transform: scale(1.2);
     }
 
+    .disabled {
+      background-color: #e0e0e0;
+      cursor: not-allowed;
+    }
+
+    .disabled input {
+      pointer-events: none;
+    }
+
     .dragging {
       opacity: 0.5;
     }
@@ -91,113 +111,232 @@
     .sorted-item:hover {
       background-color: #b1e6b1;
     }
+
+    .filter {
+      margin-bottom: 15px;
+      padding: 8px;
+      width: 100%;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
-
+ <!-- Parent Card Container -->
+ <div class="card-container">
+  <!-- Choose your upgrades form -->
   <form>
     <fieldset>
-      <legend>Choose your favorite fruits</legend>
+      <legend>Choose your upgrades</legend>
+      <input type="text" id="filterUpgrades" class="filter" placeholder="Filter upgrades..." onkeyup="filterList('checkbox')">
       <ul class="checkbox-list" id="checkboxList">
-        <li class="checkbox-item" draggable="true">
-          <label>
-            <input type="checkbox" name="fruits" value="apple" onchange="moveToSorted(this)"> Apple
-          </label>
-        </li>
-        <li class="checkbox-item" draggable="true">
-          <label>
-            <input type="checkbox" name="fruits" value="banana" onchange="moveToSorted(this)"> Banana
-          </label>
-        </li>
-        <li class="checkbox-item" draggable="true">
-          <label>
-            <input type="checkbox" name="fruits" value="orange" onchange="moveToSorted(this)"> Orange
-          </label>
-        </li>
-        <li class="checkbox-item" draggable="true">
-          <label>
-            <input type="checkbox" name="fruits" value="mango" onchange="moveToSorted(this)"> Mango
-          </label>
-        </li>
-      </ul>
-    </fieldset>
-    
-    <fieldset class="sorted-group">
-      <legend>Sorted Fruits</legend>
-      <ul class="sorted-list" id="sortedList">
-        <!-- Sorted items will appear here -->
+        <!-- Dynamically populated list of upgrades -->
       </ul>
     </fieldset>
   </form>
 
+  <!-- Sorted upgrades form -->
+  <form>
+    <fieldset class="sorted-group">
+      <legend>Sorted Upgrades</legend>
+      <input type="text" id="filterSorted" class="filter" placeholder="Filter sorted upgrades..." onkeyup="filterList('sorted')">
+      <ul class="sorted-list" id="sortedList">
+        <!-- Sorted items will appear here -->
+      </ul>
+    </fieldset>
+    
+  </form>
+</div>
+
+
   <script>
+    // Initial list of available upgrades (simulating available upgrades)
+    const upgrades = [
+      "Leather seats",
+      "Front seat warmers",
+      "Rear bucket seats",
+      "Rear seat warmers",
+      "Front sun roof",
+      "Rear sun roof",
+      "Cloaking capability",
+      "Food synthesizer",
+      "Advanced waste recycling system",
+      "Turbo vertical take-off capability"
+    ];
+
     const checkboxList = document.getElementById("checkboxList");
     const sortedList = document.getElementById("sortedList");
 
-    let draggedItem = null;
+   // Function to dynamically populate the checkbox list
+   function populateCheckboxList() {
+      upgrades.forEach((upgrade) => {
+        const li = document.createElement("li");
+        li.classList.add("checkbox-item");
+        li.setAttribute("draggable", "true");
 
-    // Add event listeners for drag and drop
-    function addDragEvents(list) {
-      list.addEventListener("dragstart", (e) => {
-        draggedItem = e.target;
-        setTimeout(() => {
-          e.target.classList.add("dragging");
-        }, 0);
+        const label = document.createElement("label");
+
+        const input = document.createElement("input");
+        input.type = "checkbox";
+        input.name = "upgrades";
+        input.value = upgrade;
+        input.onchange = (e) => moveToSorted(e.target);
+
+        label.appendChild(input);
+        label.appendChild(document.createTextNode(upgrade));
+        li.appendChild(label);
+
+        checkboxList.appendChild(li);
+
+        // Add drag-and-drop event listeners
+        li.addEventListener('dragstart', handleDragStart);
+        li.addEventListener('dragover', handleDragOver);
+        li.addEventListener('drop', handleDrop);
+        li.addEventListener('dragend', handleDragEnd);
+        input.addEventListener('keydown', handleKeyDown);
       });
-
-      list.addEventListener("dragend", (e) => {
-        draggedItem.classList.remove("dragging");
-        draggedItem = null;
-      });
-
-      list.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        const afterElement = getDragAfterElement(list, e.clientY);
-        const draggingElement = document.querySelector(".dragging");
-        if (afterElement == null) {
-          list.appendChild(draggingElement);
-        } else {
-          list.insertBefore(draggingElement, afterElement);
         }
-      });
+      
+          // Drag-and-drop event handlers
+        let draggedItem = null;
 
-      list.addEventListener("dragenter", (e) => {
+      function handleDragStart(e) {
+        draggedItem = this.closest('li');
+        setTimeout(() => draggedItem.classList.add('dragging'), 0);
+      }
+
+      function handleDragOver(e) {
         e.preventDefault();
-      });
-    }
-
-    function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll(".checkbox-item:not(.dragging), .sorted-item:not(.dragging)")];
-      return draggableElements.reduce(
-        (closest, child) => {
-          const box = child.getBoundingClientRect();
-          const offset = y - box.top - box.height / 2;
-          if (offset < 0 && offset > closest.offset) {
-            return { offset: offset, element: child };
+        const draggingItem = document.querySelector('.dragging');
+        if (this.closest('li') !== draggingItem) {
+          const items = Array.from(this.closest('ul').children);
+          const currentIndex = items.indexOf(this.closest('li'));
+          const draggingIndex = items.indexOf(draggingItem);
+          if (currentIndex > draggingIndex) {
+            this.closest('ul').insertBefore(draggingItem, this.closest('li').nextSibling);
           } else {
-            return closest;
+            this.closest('ul').insertBefore(draggingItem, this.closest('li'));
           }
-        },
-        { offset: Number.NEGATIVE_INFINITY }
-      ).element;
-    }
+        }
+      }
 
-    // Move checked items to sorted list
+      function handleDrop() {
+        this.closest('li').classList.remove('dragging');
+      }
+
+      function handleDragEnd() {
+        this.closest('li').classList.remove('dragging');
+        draggedItem = null;
+      }
+    
+    // Keyboard event handlers
+function handleKeyDown(e) {
+    if (e.ctrlKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        e.preventDefault();
+        const items = Array.from(this.closest('ul').children);
+        const currentIndex = items.indexOf(this.closest('li'));
+
+        if (e.key === 'ArrowUp' && currentIndex > 0) {
+            this.closest('ul').insertBefore(this.closest('li'), items[0]);
+        } else if (e.key === 'ArrowDown' && currentIndex < items.length - 1) {
+            this.closest('ul').appendChild(this.closest('li'));
+        }
+
+        // Retain focus on the moved item
+        this.querySelector('input[type="checkbox"]').focus();
+    }
+}
+
+    // checkboxList.addEventListener('keydown', handleKeyDown)
+    // sortedList.addEventListener('keydown', handleKeyDown)
+
+     // Function to handle key navigation for Home and End keys
+  function handleKeyNavigation(event) {
+    if (event.key === "Home") {
+      const firstCheckbox = checkboxList.querySelector("li input[type='checkbox']");
+      if (firstCheckbox) {
+        firstCheckbox.focus();
+      }
+    } else if (event.key === "End") {
+      const checkboxes = checkboxList.querySelectorAll("li input[type='checkbox']");
+      const lastCheckbox = checkboxes[checkboxes.length - 1];
+      if (lastCheckbox) {
+        lastCheckbox.focus();
+      }
+    }
+  }
+
+    // Add event listener for keydown to handle Home and End keys
+    document.addEventListener("keydown", handleKeyNavigation);
+
+    // Function to move checked items to sorted list without removing them from "Choose your upgrades"
     function moveToSorted(checkbox) {
       const listItem = checkbox.closest("li");
+
       if (checkbox.checked) {
-        // Move the item to sorted list
-        sortedList.appendChild(listItem);
-      } else {
-        // Move back to original list
-        checkboxList.appendChild(listItem);
+        // Disable the checkbox in "Choose your upgrades" and visually show it's moved
+        checkbox.disabled = true;
+        listItem.classList.add("disabled");
+
+        // Clone the item and add it to the "Sorted Upgrades" list
+        const clonedItem = listItem.cloneNode(true);
+        clonedItem.classList.remove("disabled");
+        clonedItem.querySelector("input").disabled = false;
+        clonedItem.querySelector("input").onchange = (e) => moveBackToChoose(e.target);
+        sortedList.appendChild(clonedItem);
+
+
+         // Add drag-and-drop event listeners to the cloned item
+         clonedItem.addEventListener('dragstart', handleDragStart);
+        clonedItem.addEventListener('dragover', handleDragOver);
+        clonedItem.addEventListener('drop', handleDrop);
+        clonedItem.addEventListener('dragend', handleDragEnd);
+        clonedItem.addEventListener('keydown', handleKeyDown);
+        
       }
     }
 
-    // Initialize drag-and-drop functionality on both lists
-    addDragEvents(checkboxList);
-    addDragEvents(sortedList);
+    // Move unchecked items from Sorted Upgrades back to Choose Your Upgrades
+    function moveBackToChoose(checkbox) {
+      const listItem = checkbox.closest("li");
 
+      // Re-enable the checkbox in "Choose your upgrades"
+      const originalItem = checkboxList.querySelector(`li input[value="${checkbox.value}"]`).closest('li');
+      const originalCheckbox = originalItem.querySelector("input");
+      
+      // Re-enable the checkbox and remove the 'disabled' class
+      originalCheckbox.disabled = false;
+      originalItem.classList.remove('disabled');
+      // Uncheck the checkbox when moved back to "Choose Your Upgrades"
+     originalCheckbox.checked = false;
+
+      // Remove the item from Sorted Upgrades list
+      listItem.remove();
+    }
+
+    // Filter function for both lists
+    function filterList(listType) {
+      const filterInput = listType === 'checkbox' ? document.getElementById("filterUpgrades") : document.getElementById("filterSorted");
+      const filterValue = filterInput.value.toLowerCase();
+      const list = listType === 'checkbox' ? checkboxList : sortedList;
+      const items = list.querySelectorAll('li');
+
+      items.forEach(item => {
+        const label = item.querySelector('label').textContent.toLowerCase();
+        if (label.indexOf(filterValue) > -1) {
+          item.style.display = "";
+        } else {
+          item.style.display = "none";
+        }
+      });
+    }
+
+    // Initialize the lists on page load
+    window.onload = function() {
+      populateCheckboxList();
+    };
   </script>
 
 </body>
